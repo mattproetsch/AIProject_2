@@ -5,7 +5,7 @@
 	<Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
 	<ProductVersion>10.0.20506</ProductVersion>
 	<SchemaVersion>2.0</SchemaVersion>
-	<ProjectGuid>{62F19D93-9842-2113-8875-200137C1FBE2}</ProjectGuid>
+	<ProjectGuid>{0DC24CE4-474E-CD47-F899-D1DB0A406E3D}</ProjectGuid>
 	<OutputType>Library</OutputType>
 	<AppDesignerFolder>Properties</AppDesignerFolder>
 	<RootNamespace></RootNamespace>
@@ -48,6 +48,7 @@
   <ItemGroup>
      <Compile Include="Assets\Scripts\AStar.cs" />
      <Compile Include="Assets\Scripts\NavmeshSpawner.cs" />
+     <Compile Include="Assets\Scripts\SeekToMouseClick.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
