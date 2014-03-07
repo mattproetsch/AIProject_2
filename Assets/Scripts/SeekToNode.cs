@@ -67,10 +67,11 @@ public class SeekToNode : MonoBehaviour {
 	}
 
 	void SeekToTarget() {
-		if (Vector3.Distance(target, transform.position) > 0.01) {
+		if (Vector2.Distance(target, transform.position) > 0.1) {
 			isSeeking = true;
 			transform.position += forward * Time.deltaTime * seekSpeed;
 		} else {
+			seekNode = null;
 			isSeeking = false;
 		}
 	}

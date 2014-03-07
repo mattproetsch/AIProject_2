@@ -5,19 +5,29 @@ public class NavmeshSpawner : MonoBehaviour {
 	
 	public GameObject point;
 	
-	public float width;
-	public float height;
-	public float step;
+	float width;
+	float height;
+	public float step = 20.0f;
+
+	ArrayList points;
 	
 	// Use this for initialization
 	void Start () {
+
+		points = new ArrayList();
+
+		width = Camera.main.pixelWidth;
+		height = Camera.main.pixelHeight;
 		
-		for (float x = -width/2f; x < width/2f; x += step) {
-			for (float y = -height/2f; y < height/2f; y += step) {
-				Instantiate(point, new Vector3(x, y, 1), Quaternion.identity);
+		for (float x = 0; x < width; x += step) {
+			for (float y = 0; y < height; y += step) {
+				Vector3 pointPos = Camera.main.ScreenToWorldPoint(new Vector3(x, y, 0)) + new Vector3(0, 0, 9);
+				if (!Physics.Raycast(pointPos, Vector3.forward))
+					points.Add(Instantiate(point, pointPos, Quaternion.identity));
 			}
 		}
-		
+
+		Debug.Log ("Total points: " + points.Count);
 	}
 	
 	// Update is called once per frame
