@@ -21,7 +21,7 @@ public class NavmeshSpawner : MonoBehaviour {
 			for (float y = 0; y < height; y += step) {
 				Vector3 pointPos = Camera.main.ScreenToWorldPoint(new Vector3(x, y, 0)) + new Vector3(0, 0, 9);
 				if (!Physics.Raycast(pointPos, Vector3.forward))
-					points.Add(Instantiate(point, pointPos, Quaternion.identity));
+					points.Add(Instantiate(point, pointPos + new Vector3(0, 0, 1), Quaternion.identity));
 			}
 		}
 
@@ -36,7 +36,7 @@ public class NavmeshSpawner : MonoBehaviour {
 		
 	}
 
-	public ArrayList GetNavmesh() {
+	public Navmesh GetNavmesh() {
 		return points;
 	}
 }
