@@ -1,6 +1,14 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\FollowPath.cs">
+    <Files>
+      <File FileName="Assets\Scripts\AStar.cs" Line="170" Column="68" />
+      <File FileName="Assets\Scripts\SeekToMouseClick.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\SeekToNode.cs" Line="75" Column="22" />
+      <File FileName="Assets\Scripts\NavmeshSpawner.cs" Line="54" Column="1" />
+      <File FileName="Assets\FollowPath.cs" Line="28" Column="4" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>

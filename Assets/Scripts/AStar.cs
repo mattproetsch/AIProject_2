@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 
+
 public class AStar : MonoBehaviour {
 
 	ArrayList path;
@@ -9,8 +10,15 @@ public class AStar : MonoBehaviour {
 	public GameObject target;
 	float pathDist;
 
+	// the NavmeshPoint that pathfinding will end at
+	public static GameObject endPoint;
+
 	// fudge must be << than navmesh.span
-	private float fudge = 1.0f;
+	private float fudge = 0.001f;
+
+	// used in finding adjacent points
+	private static int layerMask = ~(1 << 8 | 1 << 9);
+
 
 	// Use this for initialization
 	void Start () {
@@ -31,37 +39,38 @@ public class AStar : MonoBehaviour {
 
 	private void CalculatePath() {
 
-		Debug.Log("Calculating...");
+		//Debug.Log("Calculating...");
 
 		navmesh = GameObject.Find("NavmeshGenerator").GetComponent<NavmeshSpawner>().GetNavmesh();
 		path = new ArrayList();
 
-		// cast rays up, down, left, right and if its longer than width/span + fudge, there's nothing
-		float expectedDist = (navmesh.width / navmesh.step) + fudge;
+		// cast rays up, down, left, right and if its longer than it should be, ignore the impact
+		float expectedDist = navmesh.gameUnitStep + fudge;
 
 		// Start the calculation by finding the closest node to the player (or GameObject to which we are attached)
 		GameObject startPoint = FindClosestNavmeshPointTo(this.gameObject.transform.position);
-		Debug.Log ("Starting from: (" + startPoint.transform.position.x + ", " + startPoint.transform.position.y + ")");
+		//Debug.Log ("Starting from: (" + startPoint.transform.position.x + ", " + startPoint.transform.position.y + ")");
 
-		SearchElement start = new SearchElement(startPoint, 0.0f);
+		SearchElement startElement = new SearchElement(startPoint, 0.0f);
 
 		// Then find the closest GameObject to the target
-		GameObject endPoint = FindClosestNavmeshPointTo(target.gameObject.transform.position);
-		Debug.Log ("Ending at: (" + endPoint.transform.position.x + ", " + endPoint.transform.position.y + ")");
+		endPoint = FindClosestNavmeshPointTo(target.gameObject.transform.position);
+		//Debug.Log ("Ending at: (" + endPoint.transform.position.x + ", " + endPoint.transform.position.y + ")");
 
 		// Keep a priority queue of points on the frontier, sorted in increasing order by F = G + H
+		// The CompareTo() function of each SearchElement takes into account the H value
 		SortedList openSet = new SortedList();
 		// Keep a list of NavmeshPoints we have already found in the SPT
 		ArrayList closedSet = new ArrayList();
 
-		openSet.Add(start.dist + Vector2.Distance(startPoint.transform.position, endPoint.transform.position), start); // F = G + H
+		openSet.Add(startElement, null);
 
 		SearchElement finalSearchElement = null;
 
 		while (openSet.Count > 0) {
 
 			// Dequeue the element in the openSet with the smallest distance
-			SearchElement current = (SearchElement)openSet.GetByIndex(0);
+			SearchElement current = openSet.GetKey(0) as SearchElement;
 
 			// Is this what we are looking for?
 			if (current.point == endPoint) {
@@ -71,11 +80,12 @@ public class AStar : MonoBehaviour {
 
 			}
 
-			openSet.RemoveAt(0);
+			// Remove this NavmeshPoint from the openSet and add it to the closedSet
+			openSet.Remove(current);
 			closedSet.Add(current.point);
 
-			Debug.Log ("Processing point at (" + current.point.transform.position.x
-			           + ", " + current.point.transform.position.y + ")");
+			//Debug.Log ("Processing point at (" + current.point.transform.position.x
+			//           + ", " + current.point.transform.position.y + ")");
 
 			// Get all NavmeshPoints adjacent to this point in the form of SearchElements whose dists are current.dist
 			// plus however long the edge from current to the adjacent point is (measured in terms of game space dist)
@@ -95,15 +105,16 @@ public class AStar : MonoBehaviour {
 			// If they are, find out if the distance through the current path is shorter than the distance
 			// they are currently at through other paths. If the distance through current is shorter, update the dist
 			// to be the dist through current, and update the from field to be current.
+
+			// Note: We do not explicitly handle the heuristic estimate at this time, as it is taken care of for us
+			// behind the scenes in the openSet.Add() function by the IComparable interface implemented by SearchElement
 			foreach (SearchElement newFrontierElement in adj) {
 
 				bool elementInOpenSet = false;
 				bool replaceExistingElement = false;
-				float existingElementIndex = -1.0f;
-				float heuristicDistance = Vector2.Distance(newFrontierElement.point.transform.position,
-				                                           endPoint.transform.position);
+				SearchElement existingElementIndex = null;
 
-				foreach (SearchElement establishedFrontierElement in openSet) {
+				foreach (SearchElement establishedFrontierElement in openSet.Keys) {
 					if (newFrontierElement.point == establishedFrontierElement.point) {
 
 						// This NavmeshPoint exists in the openSet
@@ -112,11 +123,8 @@ public class AStar : MonoBehaviour {
 						if (newFrontierElement.dist < establishedFrontierElement.dist) {
 
 							// The new path is a better path than the current path
-							// Since we are dealing with the same point, the heuristic distance need not be taken
-							// into account at this stage - only when we are dequeueing and enqueueing into the priority
-							// queue (we dequeued earlier to get current, and we will enqueue each adjacent point later)
 							replaceExistingElement = true;
-							existingElementIndex = establishedFrontierElement.dist + heuristicDistance;
+							existingElementIndex = establishedFrontierElement;
 						}
 
 						// Break out of the openSet for-loop; we are done here since we found a match
@@ -125,11 +133,11 @@ public class AStar : MonoBehaviour {
 				}
 
 				if (!elementInOpenSet) {
-					openSet.Add(newFrontierElement.dist + heuristicDistance, newFrontierElement);
+					openSet.Add(newFrontierElement, null);
 				}
 				else if (elementInOpenSet && replaceExistingElement) {
 					openSet.Remove(existingElementIndex);
-					openSet.Add(newFrontierElement.dist + heuristicDistance, newFrontierElement);
+					openSet.Add(newFrontierElement, null);
 				}
 			}
 
@@ -147,22 +155,30 @@ public class AStar : MonoBehaviour {
 			SearchElement pathPoint = finalSearchElement;
 			while (pathPoint != null) {
 				path.Add(pathPoint.point);
-				pathPoint = (SearchElement)pathPoint.from;
 				pathDist += pathPoint.dist;
+				pathPoint = (SearchElement)pathPoint.from;
 			}
 
 			// Finally, reverse the path, since we added elements to it in reverse order (i.e. starting from target)
 			path.Reverse();
+			foreach (GameObject navmeshPoint in path) {
+				SpriteRenderer sr = navmeshPoint.GetComponent<SpriteRenderer>();
+				sr.enabled = true;
+				sr.color = Color.red;
+			}
 
-			Debug.Log ("Final path distance: " + pathDist);
+			this.gameObject.GetComponent<FollowPath>().StartFollowing(path);
+
+			//Debug.Log ("Final path distance: " + pathDist);
 
 		}
 
 	}
 
 	private GameObject FindClosestNavmeshPointTo(Vector3 pos) {
-		float closestDist = navmesh.width + 1;
+		float closestDist = 1000;
 		GameObject closestObj = null;
+
 
 		foreach (GameObject cur in navmesh) {
 			if (Vector3.Distance(cur.transform.position, pos) < closestDist) {
@@ -178,30 +194,35 @@ public class AStar : MonoBehaviour {
 	// relative to element, with their relevant fields filled out
 	private ArrayList GetAdjacentPoints(SearchElement element, float expectedDist) {
 
+		// Set the NavmeshPoint pointed to by element.point to be invisible to raycasting so that we can raycast
+		// from inside it
+		int oldLayer = element.point.layer;
+		element.point.layer = 8;
+
 		// Cast rays up, down, left, right
 		// We don't need to cast diagonally because we will have path smoothing kicking in for that later
 		// If they intersect with a GameObject with tag NavmeshObject in <= expectedDist, add that point to AdjPoints
 		ArrayList adj = new ArrayList();
 
-		RaycastHit2D raycastHitUp = Physics2D.Raycast(element.point.transform.position, Vector2.up);
-		RaycastHit2D raycastHitDown = Physics2D.Raycast(element.point.transform.position, -Vector2.up);
-		RaycastHit2D raycastHitLeft = Physics2D.Raycast(element.point.transform.position, -Vector2.right);
-		RaycastHit2D raycastHitRight = Physics2D.Raycast(element.point.transform.position, Vector2.right);
+		RaycastHit2D raycastHitUp = Physics2D.Raycast(element.point.transform.position, Vector2.up, expectedDist, layerMask);
+		RaycastHit2D raycastHitDown = Physics2D.Raycast(element.point.transform.position, -Vector2.up, expectedDist, layerMask);
+		RaycastHit2D raycastHitLeft = Physics2D.Raycast(element.point.transform.position, -Vector2.right, expectedDist, layerMask);
+		RaycastHit2D raycastHitRight = Physics2D.Raycast(element.point.transform.position, Vector2.right, expectedDist, layerMask);
 
 		// If the raycast hits something, and it's a NavmeshPoint, add it to adj with dist = G (we account for H later,
 		// when adding to the priority queue) and with its from field pointing to element
-		Debug.Log ("Rays are cast");
+		//Debug.Log ("Rays are cast");
 		if (raycastHitUp.collider != null) {
 			if (raycastHitUp.collider.gameObject.CompareTag("NavmeshObject")) {
 				adj.Add(new SearchElement(raycastHitUp.collider.gameObject,
 				                          element.dist
 				                          + Vector2.Distance(raycastHitUp.point, element.point.transform.position),
 				                          element));
-				Debug.Log ("Adding frontier element at ("
-				           + raycastHitUp.collider.gameObject.transform.position.x
-				           + ", "
-				           + raycastHitUp.collider.gameObject.transform.position.y
-				           + ")");
+				//Debug.Log ("Adding frontier element at ("
+				//           + raycastHitUp.collider.gameObject.transform.position.x
+				//           + ", "
+				//           + raycastHitUp.collider.gameObject.transform.position.y
+				//           + ")");
 			}
 		}
 		if (raycastHitDown.collider != null) {
@@ -210,11 +231,11 @@ public class AStar : MonoBehaviour {
 				                          element.dist
 				                          + Vector2.Distance(raycastHitDown.point, element.point.transform.position),
 				                          element));
-				Debug.Log ("Adding frontier element at ("
-				           + raycastHitDown.collider.gameObject.transform.position.x
-				           + ", "
-				           + raycastHitDown.collider.gameObject.transform.position.y
-				           + ")");
+				//Debug.Log ("Adding frontier element at ("
+				//           + raycastHitDown.collider.gameObject.transform.position.x
+				//           + ", "
+				//           + raycastHitDown.collider.gameObject.transform.position.y
+				//           + ")");
 			}
 		}
 		if (raycastHitLeft.collider != null) {
@@ -223,11 +244,11 @@ public class AStar : MonoBehaviour {
 				                          element.dist
 				                          + Vector2.Distance(raycastHitLeft.point, element.point.transform.position),
 				                          element));
-				Debug.Log ("Adding frontier element at ("
-				           + raycastHitLeft.collider.gameObject.transform.position.x
-				           + ", "
-				           + raycastHitLeft.collider.gameObject.transform.position.y
-				           + ")");
+				//Debug.Log ("Adding frontier element at ("
+				//           + raycastHitLeft.collider.gameObject.transform.position.x
+				//           + ", "
+				//           + raycastHitLeft.collider.gameObject.transform.position.y
+				//           + ")");
 			}
 		}
 		if (raycastHitRight.collider != null) {
@@ -236,14 +257,16 @@ public class AStar : MonoBehaviour {
 				                          element.dist
 				                          + Vector2.Distance(raycastHitRight.point, element.point.transform.position),
 				                          element));
-				Debug.Log ("Adding frontier element at ("
-				           + raycastHitRight.collider.gameObject.transform.position.x
-				           + ", "
-				           + raycastHitRight.collider.gameObject.transform.position.y
-				           + ")");
+				//Debug.Log ("Adding frontier element at ("
+				//           + raycastHitRight.collider.gameObject.transform.position.x
+				//           + ", "
+				//           + raycastHitRight.collider.gameObject.transform.position.y
+				//           + ")");
 			}
 		}
 
+		// Reset old element.point.layer
+		element.point.layer = oldLayer;
 
 		return adj;
 
@@ -252,7 +275,7 @@ public class AStar : MonoBehaviour {
 
 }
 
-public class SearchElement {
+public class SearchElement : IComparable {
 
 	public GameObject point;
 	public float dist;
@@ -268,6 +291,27 @@ public class SearchElement {
 		point = g;
 		dist = d;
 		from = f;
+	}
+
+	public int CompareTo(object obj) {
+
+		if (obj == null)
+			return 1;
+
+		SearchElement other = obj as SearchElement;
+
+		// Compare these points based on G + H values
+		float thisF = this.dist + Vector2.Distance(point.transform.position, AStar.endPoint.transform.position);
+		float otherF = other.dist + Vector2.Distance(other.point.transform.position, AStar.endPoint.transform.position);
+
+		if (thisF == otherF) {
+			if (UnityEngine.Random.value < 0.5)
+				return 1;
+			else
+				return -1;
+		}
+		else
+			return thisF.CompareTo(otherF);
 	}
 
 }

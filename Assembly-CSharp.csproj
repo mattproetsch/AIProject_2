@@ -46,6 +46,7 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\FollowPath.cs" />
      <Compile Include="Assets\Scripts\AStar.cs" />
      <Compile Include="Assets\Scripts\NavmeshSpawner.cs" />
      <Compile Include="Assets\Scripts\SeekToMouseClick.cs" />
