@@ -7,7 +7,7 @@ public class SeekToNode : MonoBehaviour {
 
 	bool isSeeking;
 	Vector3 target, forward;
-	public GameObject seekNode;
+	GameObject seekNode;
 	GameObject prevNode;
 	
 	
@@ -62,11 +62,11 @@ public class SeekToNode : MonoBehaviour {
 
 	}
 
-	void SetNode(GameObject newSeekNode) {
+	public void SetNode(GameObject newSeekNode) {
 		seekNode = newSeekNode;
 	}
 
-	void SeekToTarget() {
+	public void SeekToTarget() {
 		if (Vector2.Distance(target, transform.position) > 0.1) {
 			isSeeking = true;
 			transform.position += forward * Time.deltaTime * seekSpeed;
@@ -76,7 +76,7 @@ public class SeekToNode : MonoBehaviour {
 		}
 	}
 
-	bool IsSeeking() {
+	public bool IsSeeking() {
 		return isSeeking;
 	}
 }

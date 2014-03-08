@@ -4,17 +4,15 @@ using System.Collections;
 public class NavmeshSpawner : MonoBehaviour {
 	
 	public GameObject point;
-	
-	float width;
-	float height;
-	public float step = 20.0f;
+	Navmesh points;
 
-	ArrayList points;
+	float width, height;
+	float step = 15.0f;
 	
 	// Use this for initialization
 	void Start () {
 
-		points = new ArrayList();
+		points = new Navmesh();
 
 		width = Camera.main.pixelWidth;
 		height = Camera.main.pixelHeight;
@@ -28,10 +26,25 @@ public class NavmeshSpawner : MonoBehaviour {
 		}
 
 		Debug.Log ("Total points: " + points.Count);
+		points.width = width;
+		points.height = height;
+		points.step = step;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		
 	}
+
+	public ArrayList GetNavmesh() {
+		return points;
+	}
+}
+
+public class Navmesh : ArrayList {
+
+	public float width;
+	public float height;
+	public float step;
+
 }
