@@ -11,7 +11,6 @@ public class SeekToNode : MonoBehaviour {
 	GameObject prevNode;
 	
 	
-	
 	// Use this for initialization
 	void Start () {
 		isSeeking = false;
@@ -53,6 +52,7 @@ public class SeekToNode : MonoBehaviour {
 				transform.Rotate(Vector3.forward, -rotDegrees);
 
 			}
+
 			
 		}
 
@@ -81,4 +81,6 @@ public class SeekToNode : MonoBehaviour {
 	public bool IsSeeking() {
 		return isSeeking;
 	}
+	
 }
+
