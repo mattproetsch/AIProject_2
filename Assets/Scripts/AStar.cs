@@ -19,6 +19,8 @@ public class AStar : MonoBehaviour {
 	// used in finding adjacent points
 	private static int layerMask = ~(1 << 8 | 1 << 9);
 
+	private float sqrt_2 = Mathf.Sqrt(2.0f);
+
 
 	// Use this for initialization
 	void Start () {
@@ -83,6 +85,7 @@ public class AStar : MonoBehaviour {
 			// Remove this NavmeshPoint from the openSet and add it to the closedSet
 			openSet.Remove(current);
 			closedSet.Add(current.point);
+			current.point.layer = 9;
 
 			//Debug.Log ("Processing point at (" + current.point.transform.position.x
 			//           + ", " + current.point.transform.position.y + ")");
@@ -91,8 +94,9 @@ public class AStar : MonoBehaviour {
 			// plus however long the edge from current to the adjacent point is (measured in terms of game space dist)
 			ArrayList adj = GetAdjacentPoints(current, expectedDist);
 
+
 			// Remove those points that are already in the closedSet
-			ArrayList removeFromAdj = new ArrayList();
+			/*ArrayList removeFromAdj = new ArrayList();
 			foreach (SearchElement element in adj) {
 				if (closedSet.Contains(element.point))
 					removeFromAdj.Add(element);
@@ -100,6 +104,7 @@ public class AStar : MonoBehaviour {
 			foreach (SearchElement element in removeFromAdj) {
 				adj.Remove(element);
 			}
+			*/
 
 			// Find out if any points adjacent to current are already in the openSet
 			// If they are, find out if the distance through the current path is shorter than the distance
@@ -209,6 +214,11 @@ public class AStar : MonoBehaviour {
 		RaycastHit2D raycastHitLeft = Physics2D.Raycast(element.point.transform.position, -Vector2.right, expectedDist, layerMask);
 		RaycastHit2D raycastHitRight = Physics2D.Raycast(element.point.transform.position, Vector2.right, expectedDist, layerMask);
 
+		RaycastHit2D raycastHitUpLeft = Physics2D.Raycast(element.point.transform.position, (Vector2.up - Vector2.right), expectedDist*sqrt_2, layerMask);
+		RaycastHit2D raycastHitUpRight = Physics2D.Raycast(element.point.transform.position, (Vector2.up + Vector2.right), expectedDist*sqrt_2, layerMask);
+		RaycastHit2D raycastHitDownLeft = Physics2D.Raycast(element.point.transform.position, (-Vector2.up - Vector2.right), expectedDist*sqrt_2, layerMask);
+		RaycastHit2D raycastHitDownRight = Physics2D.Raycast(element.point.transform.position, (-Vector2.up + Vector2.right), expectedDist*sqrt_2, layerMask);
+
 		// If the raycast hits something, and it's a NavmeshPoint, add it to adj with dist = G (we account for H later,
 		// when adding to the priority queue) and with its from field pointing to element
 		//Debug.Log ("Rays are cast");
@@ -261,6 +271,58 @@ public class AStar : MonoBehaviour {
 				//           + raycastHitRight.collider.gameObject.transform.position.x
 				//           + ", "
 				//           + raycastHitRight.collider.gameObject.transform.position.y
+				//           + ")");
+			}
+		}
+		if (raycastHitUpLeft.collider != null) {
+			if (raycastHitUpLeft.collider.gameObject.CompareTag("NavmeshObject")) {
+				adj.Add(new SearchElement(raycastHitUpLeft.collider.gameObject,
+				                          element.dist
+				                          + Vector2.Distance(raycastHitUpLeft.point, element.point.transform.position),
+				                          element));
+				//Debug.Log ("Adding frontier element at ("
+				//           + raycastHitUpLeft.collider.gameObject.transform.position.x
+				//           + ", "
+				//           + raycastHitUpLeft.collider.gameObject.transform.position.y
+				//           + ")");
+			}
+		}
+		if (raycastHitUpRight.collider != null) {
+			if (raycastHitUpRight.collider.gameObject.CompareTag("NavmeshObject")) {
+				adj.Add(new SearchElement(raycastHitUpRight.collider.gameObject,
+				                          element.dist
+				                          + Vector2.Distance(raycastHitUpRight.point, element.point.transform.position),
+				                          element));
+				//Debug.Log ("Adding frontier element at ("
+				//           + raycastHitUpRight.collider.gameObject.transform.position.x
+				//           + ", "
+				//           + raycastHitUpRight.collider.gameObject.transform.position.y
+				//           + ")");
+			}
+		}
+		if (raycastHitDownLeft.collider != null) {
+			if (raycastHitDownLeft.collider.gameObject.CompareTag("NavmeshObject")) {
+				adj.Add(new SearchElement(raycastHitDownLeft.collider.gameObject,
+				                          element.dist
+				                          + Vector2.Distance(raycastHitDownLeft.point, element.point.transform.position),
+				                          element));
+				//Debug.Log ("Adding frontier element at ("
+				//           + raycastHitDownLeft.collider.gameObject.transform.position.x
+				//           + ", "
+				//           + raycastHitDownLeft.collider.gameObject.transform.position.y
+				//           + ")");
+			}
+		}
+		if (raycastHitDownRight.collider != null) {
+			if (raycastHitDownRight.collider.gameObject.CompareTag("NavmeshObject")) {
+				adj.Add(new SearchElement(raycastHitDownRight.collider.gameObject,
+				                          element.dist
+				                          + Vector2.Distance(raycastHitDownRight.point, element.point.transform.position),
+				                          element));
+				//Debug.Log ("Adding frontier element at ("
+				//           + raycastHitDownRight.collider.gameObject.transform.position.x
+				//           + ", "
+				//           + raycastHitDownRight.collider.gameObject.transform.position.y
 				//           + ")");
 			}
 		}

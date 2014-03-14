@@ -41,15 +41,17 @@ public class SeekToNode : MonoBehaviour {
 			                                 0);
 
 			// Finally calculate needed degrees of rotation
-			float rotDegrees = Mathf.Acos(Vector3.Dot (pointAhead.normalized, forward)) * Mathf.Rad2Deg;
+			float rotDegrees = Mathf.Acos(Mathf.Clamp01(Vector3.Dot(pointAhead.normalized, forward))) * Mathf.Rad2Deg;
 			
 			
 			// Orient player toward target
 			if ((transform.worldToLocalMatrix.MultiplyPoint3x4(target)).y > 0) {
 				transform.Rotate(Vector3.forward, rotDegrees);
+
 			}
 			else {
 				transform.Rotate(Vector3.forward, -rotDegrees);
+
 			}
 			
 		}
@@ -67,7 +69,7 @@ public class SeekToNode : MonoBehaviour {
 	}
 
 	public void SeekToTarget() {
-		if (Vector2.Distance(target, transform.position) > 0.1) {
+		if (Vector2.Distance(target, transform.position) > 0.13) {
 			isSeeking = true;
 			transform.position += forward * Time.deltaTime * seekSpeed;
 		} else {
