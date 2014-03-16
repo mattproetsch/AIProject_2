@@ -17,7 +17,7 @@ public class AStar : MonoBehaviour {
 	private float fudge = 0.001f;
 
 	// used in finding adjacent points
-	private static int layerMask = ~(1 << 8 | 1 << 9);
+	private static int layerMask = ~(1 << 2 | 1 << 8 | 1 << 9 );
 
 	private float sqrt_2 = Mathf.Sqrt(2.0f);
 
@@ -153,6 +153,10 @@ public class AStar : MonoBehaviour {
 			throw new Exception("Target element not found by A* algorithm");
 		}
 		else {
+
+			// We shouldn't show the close navpoints any longer
+			this.gameObject.GetComponent<ShowNearbyNavpoints>().SendMessage("Cleanup");
+
 			// Reconstruct the path that won
 			path = new ArrayList();
 			pathDist = 0.0f;
@@ -171,6 +175,8 @@ public class AStar : MonoBehaviour {
 				sr.enabled = true;
 				sr.color = Color.red;
 			}
+
+
 
 			this.gameObject.GetComponent<FollowPath>().StartFollowing(path);
 

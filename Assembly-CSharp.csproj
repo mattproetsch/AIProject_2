@@ -53,6 +53,7 @@
      <Compile Include="Assets\Scripts\SeekToMouseClick.cs" />
      <Compile Include="Assets\Scripts\SeekToNode.cs" />
      <Compile Include="Assets\Scripts\SetAsAStarTargetOnClick.cs" />
+     <Compile Include="Assets\Scripts\ShowNearbyNavpoints.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
