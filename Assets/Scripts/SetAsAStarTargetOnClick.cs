@@ -9,12 +9,7 @@ public class SetAsAStarTargetOnClick : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		
-		Bounds srBounds = this.gameObject.GetComponent<SpriteRenderer>().bounds;
-		Debug.Log ("srBounds min for icecream: (" + srBounds.min.x + ", " + srBounds.min.y + ", " + srBounds.min.z + ")");
-		Debug.Log ("srBounds max for icecream: (" + srBounds.max.x + ", " + srBounds.max.y + ", " + srBounds.max.z + ")");
-
-		srBounds2D = new Rect(srBounds.min.x, srBounds.min.y, 2*srBounds.extents.x, 2*srBounds.extents.y);
-		Debug.Log ("srBounds2D Rect left: " + srBounds2D.xMin + " top: " + srBounds2D.yMax + " right: " + srBounds2D.xMax + " bottom: " + srBounds2D.yMin);
+		srBounds2D = SpriteRendererBoundingRect (this.gameObject.GetComponent<SpriteRenderer> ());
 	}
 	
 	// Update is called once per frame
@@ -32,5 +27,10 @@ public class SetAsAStarTargetOnClick : MonoBehaviour {
 				flappy.GetComponent<AStar>().target = this.gameObject;
 			}
 		}
+	}
+
+	Rect SpriteRendererBoundingRect(SpriteRenderer sr) {
+		Bounds bounds = sr.bounds;
+		return new Rect (bounds.min.x, bounds.min.y, 2 * bounds.extents.x, 2 * bounds.extents.y);
 	}
 }
