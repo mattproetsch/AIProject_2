@@ -34,7 +34,7 @@ public class NavmeshSpawner : MonoBehaviour {
 				    !Physics.Raycast (pointPos + new Vector3(0, flappyHeight, 0), Vector3.forward) &&
 				    !Physics.Raycast(pointPos + new Vector3(0, -flappyHeight, 0), Vector3.forward))
 
-					points.Add(Instantiate(point, pointPos + (10 * Vector3.forward), Quaternion.identity));
+					points.Add(Instantiate(point, pointPos + (10 * Vector3.forward), Quaternion.identity) as GameObject);
 			}
 		}
 
