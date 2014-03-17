@@ -71,7 +71,7 @@ public class SeekToNode : MonoBehaviour {
 	public void SeekToTarget() {
 		if (Vector2.Distance(target, transform.position) > 0.13) {
 			isSeeking = true;
-			transform.position += forward * Time.deltaTime * seekSpeed;
+			transform.position += (target - transform.position).normalized * Time.deltaTime * seekSpeed;
 		} else {
 			seekNode = null;
 			isSeeking = false;

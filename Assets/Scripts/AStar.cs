@@ -50,13 +50,13 @@ public class AStar : MonoBehaviour {
 		float expectedDist = navmesh.gameUnitStep + fudge;
 
 		// Start the calculation by finding the closest node to the player (or GameObject to which we are attached)
-		GameObject startPoint = FindClosestNavmeshPointTo(this.gameObject.transform.position);
+		GameObject startPoint = FindClosestNavmeshPointTo(this.gameObject);
 		//Debug.Log ("Starting from: (" + startPoint.transform.position.x + ", " + startPoint.transform.position.y + ")");
 
 		SearchElement startElement = new SearchElement(startPoint, 0.0f);
 
 		// Then find the closest GameObject to the target
-		endPoint = FindClosestNavmeshPointTo(target.gameObject.transform.position);
+		endPoint = FindClosestNavmeshPointTo(target.gameObject);
 		//Debug.Log ("Ending at: (" + endPoint.transform.position.x + ", " + endPoint.transform.position.y + ")");
 
 		// Keep a priority queue of points on the frontier, sorted in increasing order by F = G + H
@@ -94,17 +94,6 @@ public class AStar : MonoBehaviour {
 			// plus however long the edge from current to the adjacent point is (measured in terms of game space dist)
 			ArrayList adj = GetAdjacentPoints(current, expectedDist);
 
-
-			// Remove those points that are already in the closedSet
-			/*ArrayList removeFromAdj = new ArrayList();
-			foreach (SearchElement element in adj) {
-				if (closedSet.Contains(element.point))
-					removeFromAdj.Add(element);
-			}
-			foreach (SearchElement element in removeFromAdj) {
-				adj.Remove(element);
-			}
-			*/
 
 			// Find out if any points adjacent to current are already in the openSet
 			// If they are, find out if the distance through the current path is shorter than the distance
@@ -186,15 +175,28 @@ public class AStar : MonoBehaviour {
 
 	}
 
-	private GameObject FindClosestNavmeshPointTo(Vector3 pos) {
+	private GameObject FindClosestNavmeshPointTo(GameObject tgt) {
+
 		float closestDist = 1000;
+
 		GameObject closestObj = null;
+		Vector3 pos = tgt.transform.position;
 
+		if (tgt == this.gameObject) {
+			foreach (GameObject cur in this.gameObject.GetComponent<ShowNearbyNavpoints>().nearbyNavpoints) {
+				if (Vector2.Distance (cur.transform.position, pos) < closestDist) {
+					closestDist = Vector2.Distance (cur.transform.position, pos);
+					closestObj = cur;
+				}
+			}
+		}
 
-		foreach (GameObject cur in navmesh) {
-			if (Vector3.Distance(cur.transform.position, pos) < closestDist) {
-				closestDist = Vector3.Distance(cur.transform.position, pos);
-				closestObj = cur;
+		else {
+			foreach (GameObject cur in navmesh) {
+				if (Vector2.Distance(cur.transform.position, pos) < closestDist) {
+					closestDist = Vector2.Distance(cur.transform.position, pos);
+					closestObj = cur;
+				}
 			}
 		}
 

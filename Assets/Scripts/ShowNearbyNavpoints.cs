@@ -3,7 +3,7 @@ using System.Collections;
 
 public class ShowNearbyNavpoints : MonoBehaviour {
 
-	ArrayList nearbyNavpoints;
+	public ArrayList nearbyNavpoints;
 
 	// Use this for initialization
 	void Start () {
