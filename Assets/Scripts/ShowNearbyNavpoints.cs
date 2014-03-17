@@ -18,7 +18,7 @@ public class ShowNearbyNavpoints : MonoBehaviour {
 		foreach (GameObject navpoint in nearbyNavpoints) {
 			if (!Obscuredd (navpoint)) {
 				navpoint.GetComponent<SpriteRenderer> ().enabled = true;
-				navpoint.GetComponent<SpriteRenderer> ().color = Color.white;
+				navpoint.GetComponent<SpriteRenderer> ().color = Color.blue;
 			} else {
 				navpoint.GetComponent<SpriteRenderer> ().enabled = true;
 				navpoint.GetComponent<SpriteRenderer> ().color = Color.gray;
@@ -44,7 +44,7 @@ public class ShowNearbyNavpoints : MonoBehaviour {
 		
 	void Cleanup() {
 		foreach (GameObject navpoint in nearbyNavpoints) {
-			navpoint.GetComponent<SpriteRenderer> ().enabled = false;
+			navpoint.GetComponent<SpriteRenderer> ().color = Color.white;
 
 		}
 

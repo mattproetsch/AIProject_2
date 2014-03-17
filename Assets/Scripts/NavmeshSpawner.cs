@@ -44,6 +44,10 @@ public class NavmeshSpawner : MonoBehaviour {
 		                       - Camera.main.WorldToScreenPoint(new Vector3(0, 0, 0))).x;
 
 		points.gameUnitStep = (step / gameUnitInPx);
+
+		if (this.gameObject.GetComponent<AStar_SpecialSourceAndDest> ()) {
+			this.gameObject.GetComponent<AStar_SpecialSourceAndDest> ().UpdateNavmesh ();
+		}
 	}
 	
 	// Update is called once per frame

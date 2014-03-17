@@ -3,11 +3,11 @@ using System;
 using System.Collections;
 
 
-public class AStar : MonoBehaviour {
+public class AStar_SpecialSourceAndDest : MonoBehaviour {
 
 	ArrayList path;
 	Navmesh navmesh;
-	public GameObject target;
+	public GameObject source;
 	float pathDist;
 
 	// the NavmeshPoint that pathfinding will end at
@@ -19,60 +19,87 @@ public class AStar : MonoBehaviour {
 	// used in finding adjacent points
 	private static int layerMask = ~(1 << 2 | 1 << 8 | 1 << 9 );
 
+	// used in distance calculations
 	private float sqrt_2 = Mathf.Sqrt(2.0f);
+
+	// keep track of source and dest locations
+	private Vector3 sourceClick;
+	private bool sourceClicked = false;
+	private Vector3 destClick;
+	private bool destClicked = false;
 
 
 	// Use this for initialization
 	void Start () {
 
-		target = null;
+		source = null;
 		pathDist = 0.0f;
 
+
+	}
+
+	public void UpdateNavmesh() {
+				navmesh = GameObject.Find ("NavmeshGenerator").GetComponent<NavmeshSpawner> ().GetNavmesh ();
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		if (pathDist < 0.01 && target != null) {
-			CalculatePath();
+		if (pathDist < 0.01 && sourceClicked && destClicked) {
 			pathDist = 1.0f;
+			CalculatePath();
+			sourceClicked = false;
+			destClicked = false;
+		}
+
+		if (Input.GetMouseButton (0)) {
+			sourceClick = Camera.main.ScreenToWorldPoint (Input.mousePosition);
+			sourceClicked = true;
+			Debug.Log (sourceClick);
+		}
+		else if (Input.GetMouseButton (1)) {
+			destClick = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+			destClicked = true;
+			Debug.Log(destClick);
 		}
 	}
 
 
 	private void CalculatePath() {
 
-		//Debug.Log("Calculating...");
-
-		navmesh = GameObject.Find("NavmeshGenerator").GetComponent<NavmeshSpawner>().GetNavmesh();
 		path = new ArrayList();
+		navmesh = GameObject.Find ("NavmeshGenerator").GetComponent<NavmeshSpawner> ().GetNavmesh ();
 
 		// cast rays up, down, left, right and if its longer than it should be, ignore the impact
 		float expectedDist = navmesh.gameUnitStep + fudge;
 
 		// Start the calculation by finding the closest node to the player (or GameObject to which we are attached)
-		GameObject startPoint = FindClosestNavmeshPointTo(this.gameObject);
-		Debug.Log ("Starting from: (" + startPoint.transform.position.x + ", " + startPoint.transform.position.y + ")");
+		GameObject startPoint = FindClosestNavmeshPointTo(sourceClick);
+		startPoint.GetComponent<SpriteRenderer> ().enabled = true;
+		startPoint.GetComponent<SpriteRenderer> ().color = Color.red;
+		//Debug.Log ("Starting from: (" + startPoint.transform.position.x + ", " + startPoint.transform.position.y + ")");
 
-		SearchElement startElement = new SearchElement(startPoint, 0.0f);
+		_SearchElement startElement = new _SearchElement(startPoint, 0.0f);
 
 		// Then find the closest GameObject to the target
-		endPoint = FindClosestNavmeshPointTo(target.gameObject);
+		endPoint = FindClosestNavmeshPointTo(destClick);
+		endPoint.GetComponent<SpriteRenderer> ().enabled = true;
+		endPoint.GetComponent<SpriteRenderer> ().color = Color.red;
 		//Debug.Log ("Ending at: (" + endPoint.transform.position.x + ", " + endPoint.transform.position.y + ")");
 
 		// Keep a priority queue of points on the frontier, sorted in increasing order by F = G + H
-		// The CompareTo() function of each SearchElement takes into account the H value
+		// The CompareTo() function of each _SearchElement takes into account the H value
 		SortedList openSet = new SortedList();
 		// Keep a list of NavmeshPoints we have already found in the SPT
 		ArrayList closedSet = new ArrayList();
 
 		openSet.Add(startElement, null);
 
-		SearchElement finalSearchElement = null;
+		_SearchElement finalSearchElement = null;
 
 		while (openSet.Count > 0) {
 
 			// Dequeue the element in the openSet with the smallest distance
-			SearchElement current = openSet.GetKey(0) as SearchElement;
+			_SearchElement current = openSet.GetKey(0) as _SearchElement;
 
 			// Is this what we are looking for?
 			if (current.point == endPoint) {
@@ -90,7 +117,7 @@ public class AStar : MonoBehaviour {
 			//Debug.Log ("Processing point at (" + current.point.transform.position.x
 			//           + ", " + current.point.transform.position.y + ")");
 
-			// Get all NavmeshPoints adjacent to this point in the form of SearchElements whose dists are current.dist
+			// Get all NavmeshPoints adjacent to this point in the form of _SearchElements whose dists are current.dist
 			// plus however long the edge from current to the adjacent point is (measured in terms of game space dist)
 			ArrayList adj = GetAdjacentPoints(current, expectedDist);
 
@@ -101,14 +128,14 @@ public class AStar : MonoBehaviour {
 			// to be the dist through current, and update the from field to be current.
 
 			// Note: We do not explicitly handle the heuristic estimate at this time, as it is taken care of for us
-			// behind the scenes in the openSet.Add() function by the IComparable interface implemented by SearchElement
-			foreach (SearchElement newFrontierElement in adj) {
+			// behind the scenes in the openSet.Add() function by the IComparable interface implemented by _SearchElement
+			foreach (_SearchElement newFrontierElement in adj) {
 
 				bool elementInOpenSet = false;
 				bool replaceExistingElement = false;
-				SearchElement existingElementIndex = null;
+				_SearchElement existingElementIndex = null;
 
-				foreach (SearchElement establishedFrontierElement in openSet.Keys) {
+				foreach (_SearchElement establishedFrontierElement in openSet.Keys) {
 					if (newFrontierElement.point == establishedFrontierElement.point) {
 
 						// This NavmeshPoint exists in the openSet
@@ -128,16 +155,11 @@ public class AStar : MonoBehaviour {
 
 				if (!elementInOpenSet) {
 					openSet.Add(newFrontierElement, null);
+					
 				}
 				else if (elementInOpenSet && replaceExistingElement) {
 					openSet.Remove(existingElementIndex);
 					openSet.Add(newFrontierElement, null);
-				}
-
-				foreach (SearchElement e in openSet.Keys) {
-					//Debug.Log("(" + e.point.transform.position.x + ", " + e.point.transform.position.y + "): "
-					//          + (e.dist + Vector2.Distance(e.point.transform.position, endPoint.transform.position)).ToString()
-					//          + "   ");
 				}
 			}
 
@@ -150,17 +172,17 @@ public class AStar : MonoBehaviour {
 		else {
 
 			// We shouldn't show the close navpoints any longer
-			this.gameObject.GetComponent<ShowNearbyNavpoints>().SendMessage("Cleanup");
+			//this.gameObject.GetComponent<ShowNearbyNavpoints>().SendMessage("Cleanup");
 
 			// Reconstruct the path that won
 			path = new ArrayList();
 			pathDist = 0.0f;
 
-			SearchElement pathPoint = finalSearchElement;
+			_SearchElement pathPoint = finalSearchElement;
 			while (pathPoint != null) {
 				path.Add(pathPoint.point);
 				pathDist += pathPoint.dist;
-				pathPoint = (SearchElement)pathPoint.from;
+				pathPoint = (_SearchElement)pathPoint.from;
 			}
 
 			// Finally, reverse the path, since we added elements to it in reverse order (i.e. starting from target)
@@ -173,7 +195,7 @@ public class AStar : MonoBehaviour {
 
 
 
-			this.gameObject.GetComponent<FollowPath>().StartFollowing(path);
+			//this.gameObject.GetComponent<FollowPath>().StartFollowing(path);
 
 			//Debug.Log ("Final path distance: " + pathDist);
 
@@ -181,37 +203,26 @@ public class AStar : MonoBehaviour {
 
 	}
 
-	private GameObject FindClosestNavmeshPointTo(GameObject tgt) {
+	private GameObject FindClosestNavmeshPointTo(Vector3 tgt) {
 
 		float closestDist = 1000;
 
 		GameObject closestObj = null;
-		Vector3 pos = tgt.transform.position;
 
-		if (tgt == this.gameObject) {
-			foreach (GameObject cur in this.gameObject.GetComponent<ShowNearbyNavpoints>().nearbyNavpoints) {
-				if (Vector2.Distance (cur.transform.position, pos) < closestDist) {
-					closestDist = Vector2.Distance (cur.transform.position, pos);
-					closestObj = cur;
-				}
-			}
-		}
 
-		else {
-			foreach (GameObject cur in navmesh) {
-				if (Vector2.Distance(cur.transform.position, pos) < closestDist) {
-					closestDist = Vector2.Distance(cur.transform.position, pos);
-					closestObj = cur;
-				}
+		foreach (GameObject cur in navmesh) {
+			if (Vector2.Distance(cur.transform.position, tgt) < closestDist) {
+				closestDist = Vector2.Distance(cur.transform.position, tgt);
+				closestObj = cur;
 			}
 		}
 
 		return closestObj;
 	}
 
-	// Returns an ArrayList of up to four adjacent SearchElements in the up, down, left, right directions
+	// Returns an ArrayList of up to four adjacent _SearchElements in the up, down, left, right directions
 	// relative to element, with their relevant fields filled out
-	private ArrayList GetAdjacentPoints(SearchElement element, float expectedDist) {
+	private ArrayList GetAdjacentPoints(_SearchElement element, float expectedDist) {
 
 		// Set the NavmeshPoint pointed to by element.point to be invisible to raycasting so that we can raycast
 		// from inside it
@@ -238,7 +249,7 @@ public class AStar : MonoBehaviour {
 		//Debug.Log ("Rays are cast");
 		if (raycastHitUp.collider != null) {
 			if (raycastHitUp.collider.gameObject.CompareTag("NavmeshObject")) {
-				adj.Add(new SearchElement(raycastHitUp.collider.gameObject,
+				adj.Add(new _SearchElement(raycastHitUp.collider.gameObject,
 				                          element.dist
 				                          + Vector2.Distance(raycastHitUp.point, element.point.transform.position),
 				                          element));
@@ -251,7 +262,7 @@ public class AStar : MonoBehaviour {
 		}
 		if (raycastHitDown.collider != null) {
 			if (raycastHitDown.collider.gameObject.CompareTag("NavmeshObject")) {
-				adj.Add(new SearchElement(raycastHitDown.collider.gameObject,
+				adj.Add(new _SearchElement(raycastHitDown.collider.gameObject,
 				                          element.dist
 				                          + Vector2.Distance(raycastHitDown.point, element.point.transform.position),
 				                          element));
@@ -260,11 +271,12 @@ public class AStar : MonoBehaviour {
 				//           + ", "
 				//           + raycastHitDown.collider.gameObject.transform.position.y
 				//           + ")");
+
 			}
 		}
 		if (raycastHitLeft.collider != null) {
 			if (raycastHitLeft.collider.gameObject.CompareTag("NavmeshObject")) {
-				adj.Add(new SearchElement(raycastHitLeft.collider.gameObject,
+				adj.Add(new _SearchElement(raycastHitLeft.collider.gameObject,
 				                          element.dist
 				                          + Vector2.Distance(raycastHitLeft.point, element.point.transform.position),
 				                          element));
@@ -273,11 +285,12 @@ public class AStar : MonoBehaviour {
 				//           + ", "
 				//           + raycastHitLeft.collider.gameObject.transform.position.y
 				//           + ")");
+
 			}
 		}
 		if (raycastHitRight.collider != null) {
 			if (raycastHitRight.collider.gameObject.CompareTag("NavmeshObject")) {
-				adj.Add(new SearchElement(raycastHitRight.collider.gameObject,
+				adj.Add(new _SearchElement(raycastHitRight.collider.gameObject,
 				                          element.dist
 				                          + Vector2.Distance(raycastHitRight.point, element.point.transform.position),
 				                          element));
@@ -286,11 +299,12 @@ public class AStar : MonoBehaviour {
 				//           + ", "
 				//           + raycastHitRight.collider.gameObject.transform.position.y
 				//           + ")");
+
 			}
 		}
 		if (raycastHitUpLeft.collider != null) {
 			if (raycastHitUpLeft.collider.gameObject.CompareTag("NavmeshObject")) {
-				adj.Add(new SearchElement(raycastHitUpLeft.collider.gameObject,
+				adj.Add(new _SearchElement(raycastHitUpLeft.collider.gameObject,
 				                          element.dist
 				                          + Vector2.Distance(raycastHitUpLeft.point, element.point.transform.position),
 				                          element));
@@ -299,11 +313,12 @@ public class AStar : MonoBehaviour {
 				//           + ", "
 				//           + raycastHitUpLeft.collider.gameObject.transform.position.y
 				//           + ")");
+
 			}
 		}
 		if (raycastHitUpRight.collider != null) {
 			if (raycastHitUpRight.collider.gameObject.CompareTag("NavmeshObject")) {
-				adj.Add(new SearchElement(raycastHitUpRight.collider.gameObject,
+				adj.Add(new _SearchElement(raycastHitUpRight.collider.gameObject,
 				                          element.dist
 				                          + Vector2.Distance(raycastHitUpRight.point, element.point.transform.position),
 				                          element));
@@ -312,11 +327,12 @@ public class AStar : MonoBehaviour {
 				//           + ", "
 				//           + raycastHitUpRight.collider.gameObject.transform.position.y
 				//           + ")");
+
 			}
 		}
 		if (raycastHitDownLeft.collider != null) {
 			if (raycastHitDownLeft.collider.gameObject.CompareTag("NavmeshObject")) {
-				adj.Add(new SearchElement(raycastHitDownLeft.collider.gameObject,
+				adj.Add(new _SearchElement(raycastHitDownLeft.collider.gameObject,
 				                          element.dist
 				                          + Vector2.Distance(raycastHitDownLeft.point, element.point.transform.position),
 				                          element));
@@ -325,11 +341,12 @@ public class AStar : MonoBehaviour {
 				//           + ", "
 				//           + raycastHitDownLeft.collider.gameObject.transform.position.y
 				//           + ")");
+
 			}
 		}
 		if (raycastHitDownRight.collider != null) {
 			if (raycastHitDownRight.collider.gameObject.CompareTag("NavmeshObject")) {
-				adj.Add(new SearchElement(raycastHitDownRight.collider.gameObject,
+				adj.Add(new _SearchElement(raycastHitDownRight.collider.gameObject,
 				                          element.dist
 				                          + Vector2.Distance(raycastHitDownRight.point, element.point.transform.position),
 				                          element));
@@ -338,6 +355,7 @@ public class AStar : MonoBehaviour {
 				//           + ", "
 				//           + raycastHitDownRight.collider.gameObject.transform.position.y
 				//           + ")");
+
 			}
 		}
 
@@ -351,19 +369,19 @@ public class AStar : MonoBehaviour {
 
 }
 
-public class SearchElement : IComparable {
+public class _SearchElement : IComparable {
 
 	public GameObject point;
 	public float dist;
-	public SearchElement from;
+	public _SearchElement from;
 
-	public SearchElement(GameObject g, float d) {
+	public _SearchElement(GameObject g, float d) {
 		point = g;
 		dist = d;
 		from = null;
 	}
 
-	public SearchElement(GameObject g, float d, SearchElement f) {
+	public _SearchElement(GameObject g, float d, _SearchElement f) {
 		point = g;
 		dist = d;
 		from = f;
@@ -374,7 +392,7 @@ public class SearchElement : IComparable {
 		if (obj == null)
 			return 1;
 
-		SearchElement other = obj as SearchElement;
+		_SearchElement other = obj as _SearchElement;
 
 		// Compare these points based on G + H values
 		float thisF = this.dist + Vector2.Distance(point.transform.position, AStar.endPoint.transform.position);
