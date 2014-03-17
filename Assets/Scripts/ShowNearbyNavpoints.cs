@@ -14,13 +14,20 @@ public class ShowNearbyNavpoints : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-
+		foreach (GameObject navpoint in nearbyNavpoints) {
+			if (!Obscuredd (navpoint)) {
+				navpoint.GetComponent<SpriteRenderer> ().enabled = true;
+				navpoint.GetComponent<SpriteRenderer> ().color = Color.gray;
+			} else {
+				navpoint.GetComponent<SpriteRenderer> ().color = Color.white;
+				navpoint.GetComponent<SpriteRenderer> ().enabled = false;
+			}
+		}
 	}
 
 	void OnTriggerEnter2D(Collider2D other) {
 		if (other.tag == "NavmeshObject") {
-			other.gameObject.GetComponent<SpriteRenderer> ().enabled = true;
-			other.gameObject.GetComponent<SpriteRenderer> ().color = Color.gray;
+
 			nearbyNavpoints.Add (other.gameObject);
 		}
 	}
@@ -42,5 +49,16 @@ public class ShowNearbyNavpoints : MonoBehaviour {
 
 		nearbyNavpoints.Clear ();
 		this.gameObject.GetComponent<CircleCollider2D> ().enabled = false;
+	}
+
+	bool Obscuredd(GameObject tgt) {
+		tgt.layer = 8;
+		RaycastHit2D rh2D = Physics2D.Raycast (transform.position, (tgt.transform.position - transform.position), Mathf.Infinity, ((1 << 8) | (1 << 10)));
+		tgt.layer = 0;
+		if (rh2D && rh2D.collider.tag != "Obstacle") {
+			return false;
+		} else
+			Debug.Log (rh2D.collider.tag);
+			return true;
 	}
 }
